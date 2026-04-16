@@ -63,9 +63,11 @@ LiteNeXtDepth follows an encoder–decoder design with a separate ResNet-18 Pose
 The two custom blocks:
 
 <p align="center">
-  <img src="assets/starnext.png" width="40%" alt="StarNext"/>
+  <img src="assets/starnext.png" width="40%" alt="StarNext"
+  style="background-color: #f6f8fa; padding: 3px; border-radius: 8px;"/>
   &nbsp;&nbsp;&nbsp;
-  <img src="assets/adc.png" width="50%" alt="ADC vs CDC"/>
+  <img src="assets/adc.png" width="50%" alt="ADC vs CDC"
+  style="background-color: #f6f8fa; padding: 3px; border-radius: 8px;"/>
 </p>
 
 **StarNext** (left) splits the expanded feature into two parallel branches — one 3×3 standard convolution and one 3×3 dilated convolution — and fuses them with an element-wise product. This single multiplicative gate is the key trick: it implicitly synthesizes pairwise channel combinations equivalent to a polynomial-kernel projection, multiplying expressive capacity _without_ multiplying parameters.
@@ -75,7 +77,8 @@ The two custom blocks:
 ### Training Pipeline
 
 <p align="center">
-  <img src="assets/pipeline.png" width="50%" alt="Training pipeline with Disparity-Guided Cutout"/>
+  <img src="assets/pipeline.png" width="75%" alt="Training pipeline with Disparity-Guided Cutout"
+  style="background-color: #f6f8fa; padding: 16px; border-radius: 8px;"/>
 </p>
 
 A single training step runs the network **twice**: a no-grad forward pass first produces a disparity map, from which Disparity-Guided Cutout picks a near-range pixel and masks its neighborhood. Only the second forward pass — on the masked input — receives gradients. This self-bootstrapping loop is what makes the augmentation adaptive: as the model improves, its near-range targeting also sharpens.
@@ -88,10 +91,10 @@ A single training step runs the network **twice**: a no-grad forward pass first 
 
 Evaluated on the standard 697 test images at 192×640 input resolution. Lower is better for the error metrics on the left; higher is better for the δ accuracy metrics on the right.
 
-| Model                    |     Params |    GFLOPs |  AbsRel ↓ |   SqRel ↓ |    RMSE ↓ | RMSE log ↓ | δ < 1.25 ↑ | δ < 1.25² ↑ | δ < 1.25³ ↑ |
-| ------------------------ | ---------: | --------: | --------: | --------: | --------: | ---------: | ---------: | ----------: | ----------: |
-| Lite-Mono                |     3.069M |     5.032 |     0.116 | **0.837** | **4.740** |      0.194 |      0.871 |       0.958 |   **0.981** |
-| **LiteNeXtDepth (Ours)** | **1.520M** | **2.079** | **0.115** |     0.852 |     4.752 |      0.194 |      0.871 |       0.958 |       0.980 |
+| Model                    |     Params |    GFLOPs | AbsRel&nbsp;↓ | SqRel&nbsp;↓ | RMSE&nbsp;↓ | RMSE&nbsp;log&nbsp;↓ | δ&nbsp;<&nbsp;1.25&nbsp;↑ | δ&nbsp;<&nbsp;1.25²&nbsp;↑ | δ&nbsp;<&nbsp;1.25³&nbsp;↑ |
+| ------------------------ | ---------: | --------: | ------------: | -----------: | ----------: | -------------------: | ------------------------: | -------------------------: | -------------------------: |
+| Lite-Mono                |     3.069M |     5.032 |         0.116 |    **0.837** |   **4.740** |                0.194 |                     0.871 |                      0.958 |                  **0.981** |
+| **LiteNeXtDepth (Ours)** | **1.520M** | **2.079** |     **0.115** |        0.852 |       4.752 |                0.194 |                     0.871 |                      0.958 |                      0.980 |
 
 Comparable accuracy with **half the parameters and 58% less compute**.
 
