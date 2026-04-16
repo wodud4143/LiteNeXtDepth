@@ -22,12 +22,12 @@ Lightweight MDE models have steadily shrunk parameter counts, but **real edge pl
 
 LiteNeXtDepth tackles this head-on with four targeted designs:
 
-| Component | What it does | Where it lives |
-|---|---|---|
-| **ADC Module** (Asymmetric Dilated Convolution) | Captures horizontal/vertical structural cues that dominate driving scenes (poles, signs, lane markings) using 1×5 and 5×1 asymmetric kernels fused with a dilated DWConv inside an inverted residual bottleneck | All encoder stages |
-| **StarNext Module** | Uses the *Star Operation* (element-wise multiplication of two parallel branches) to project features into an implicit high-dimensional space — restoring local representational capacity *without* widening channels | Stage 2 (high-res) |
-| **Disparity-Guided Cutout** | Reads the model's own predicted disparity, picks a top-1% (i.e., closest) pixel below the horizon, and zero-masks its neighborhood — forcing the model to actively learn near-range structure | Data augmentation |
-| **Restricted Random Crop** | Crops to 85–95% of the original frame and resizes back, gently zooming in on near-range objects without destabilizing the lightweight network | Data augmentation |
+| Component                                       | What it does                                                                                                                                                                                                         | Where it lives     |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| **ADC Module** (Asymmetric Dilated Convolution) | Captures horizontal/vertical structural cues that dominate driving scenes (poles, signs, lane markings) using 1×5 and 5×1 asymmetric kernels fused with a dilated DWConv inside an inverted residual bottleneck      | All encoder stages |
+| **StarNext Module**                             | Uses the _Star Operation_ (element-wise multiplication of two parallel branches) to project features into an implicit high-dimensional space — restoring local representational capacity _without_ widening channels | Stage 2 (high-res) |
+| **Disparity-Guided Cutout**                     | Reads the model's own predicted disparity, picks a top-1% (i.e., closest) pixel below the horizon, and zero-masks its neighborhood — forcing the model to actively learn near-range structure                        | Data augmentation  |
+| **Restricted Random Crop**                      | Crops to 85–95% of the original frame and resizes back, gently zooming in on near-range objects without destabilizing the lightweight network                                                                        | Data augmentation  |
 
 The result: **~50% fewer parameters, ~58% fewer GFLOPs, ~46–52% faster inference across all Jetson power modes** — while matching or beating Lite-Mono on AbsRel and δ₁.
 
@@ -68,7 +68,7 @@ The two custom blocks:
   <img src="assets/adc.png" width="50%" alt="ADC vs CDC"/>
 </p>
 
-**StarNext** (left) splits the expanded feature into two parallel branches — one 3×3 standard convolution and one 3×3 dilated convolution — and fuses them with an element-wise product. This single multiplicative gate is the key trick: it implicitly synthesizes pairwise channel combinations equivalent to a polynomial-kernel projection, multiplying expressive capacity *without* multiplying parameters.
+**StarNext** (left) splits the expanded feature into two parallel branches — one 3×3 standard convolution and one 3×3 dilated convolution — and fuses them with an element-wise product. This single multiplicative gate is the key trick: it implicitly synthesizes pairwise channel combinations equivalent to a polynomial-kernel projection, multiplying expressive capacity _without_ multiplying parameters.
 
 **ADC** (right) replaces Lite-Mono's CDC. It first passes the input through a horizontal 1×5 and a vertical 5×1 convolution in parallel, concatenates them, then applies a 3×3 dilated depthwise convolution. The asymmetric kernels make the directional bias explicit — exactly the inductive prior you want for street-scene depth, where most depth discontinuities are vertical (poles, building edges) or horizontal (road, curbs).
 
@@ -88,10 +88,10 @@ A single training step runs the network **twice**: a no-grad forward pass first 
 
 Evaluated on the standard 697 test images at 192×640 input resolution. Lower is better for the error metrics on the left; higher is better for the δ accuracy metrics on the right.
 
-| Model | Params | GFLOPs | AbsRel ↓ | SqRel ↓ | RMSE ↓ | RMSE log ↓ | δ < 1.25 ↑ | δ < 1.25² ↑ | δ < 1.25³ ↑ |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Lite-Mono            | 3.069M | 5.032 | 0.116 | **0.837** | **4.740** | 0.194 | 0.871 | 0.958 | **0.981** |
-| **LiteNeXtDepth (Ours)** | **1.520M** | **2.079** | **0.115** | 0.852 | 4.752 | 0.194 | 0.871 | 0.958 | 0.980 |
+| Model                    |     Params |    GFLOPs |  AbsRel ↓ |   SqRel ↓ |    RMSE ↓ | RMSE log ↓ | δ < 1.25 ↑ | δ < 1.25² ↑ | δ < 1.25³ ↑ |
+| ------------------------ | ---------: | --------: | --------: | --------: | --------: | ---------: | ---------: | ----------: | ----------: |
+| Lite-Mono                |     3.069M |     5.032 |     0.116 | **0.837** | **4.740** |      0.194 |      0.871 |       0.958 |   **0.981** |
+| **LiteNeXtDepth (Ours)** | **1.520M** | **2.079** | **0.115** |     0.852 |     4.752 |      0.194 |      0.871 |       0.958 |       0.980 |
 
 Comparable accuracy with **half the parameters and 58% less compute**.
 
@@ -99,12 +99,12 @@ Comparable accuracy with **half the parameters and 58% less compute**.
 
 Inference times are averaged over 697 KITTI test images after TensorRT optimization, with `jetson_clocks` enabled to lock CPU/GPU/EMC frequencies.
 
-| Power Mode | Lite-Mono | **LiteNeXtDepth** | Speedup | 30 FPS budget |
-|---|---:|---:|---:|:---:|
-| MaxN Super | 9.624 ms | **5.196 ms** | **46.0%** | ✅ both |
-| 25 W       | 10.476 ms | **5.652 ms** | **46.1%** | ✅ both |
-| 15 W       | 16.934 ms | **9.098 ms** | **46.3%** | ✅ both |
-| **7 W**    | 36.613 ms ❌ | **17.583 ms** ✅ | **52.0%** | only ours |
+| Power Mode |    Lite-Mono | **LiteNeXtDepth** |   Speedup | 30 FPS budget |
+| ---------- | -----------: | ----------------: | --------: | :-----------: |
+| MaxN Super |     9.624 ms |      **5.196 ms** | **46.0%** |    ✅ both    |
+| 25 W       |    10.476 ms |      **5.652 ms** | **46.1%** |    ✅ both    |
+| 15 W       |    16.934 ms |      **9.098 ms** | **46.3%** |    ✅ both    |
+| **7 W**    | 36.613 ms ❌ |  **17.583 ms** ✅ | **52.0%** |   only ours   |
 
 The 7W column is the headline: **Lite-Mono blows the real-time budget; LiteNeXtDepth comes in at half the budget**, leaving room for the rest of the perception stack.
 
@@ -112,14 +112,14 @@ The 7W column is the headline: **Lite-Mono blows the real-time budget; LiteNeXtD
 
 With Restricted Random Crop enabled. Removing each component degrades the metric most aligned with what that component was designed for:
 
-| Configuration | AbsRel ↓ | SqRel ↓ | RMSE ↓ | δ₁ ↑ |
-|---|---:|---:|---:|---:|
-| w/o ADC                   | 0.127 | 0.928 | 5.031 | 0.845 |
-| w/o StarNext              | 0.120 | 0.923 | 4.914 | 0.863 |
-| w/o Disparity-Guided Cutout | 0.122 | 0.909 | 4.964 | 0.857 |
-| **All (Ours)**            | **0.115** | **0.852** | **4.752** | **0.871** |
+| Configuration               |  AbsRel ↓ |   SqRel ↓ |    RMSE ↓ |      δ₁ ↑ |
+| --------------------------- | --------: | --------: | --------: | --------: |
+| w/o ADC                     |     0.127 |     0.928 |     5.031 |     0.845 |
+| w/o StarNext                |     0.120 |     0.923 |     4.914 |     0.863 |
+| w/o Disparity-Guided Cutout |     0.122 |     0.909 |     4.964 |     0.857 |
+| **All (Ours)**              | **0.115** | **0.852** | **4.752** | **0.871** |
 
-SqRel is the primary near-range metric — its denominator scales with depth, so close-range errors dominate. Disparity-Guided Cutout drives **~3.4% SqRel improvement** over a naive bottom-half random Cutout baseline (0.882 → 0.852), confirming that *adaptive* near-range targeting beats *positional* near-range priors.
+SqRel is the primary near-range metric — its denominator scales with depth, so close-range errors dominate. Disparity-Guided Cutout drives **~3.4% SqRel improvement** over a naive bottom-half random Cutout baseline (0.882 → 0.852), confirming that _adaptive_ near-range targeting beats _positional_ near-range priors.
 
 ---
 
@@ -144,17 +144,17 @@ pip install 'git+https://github.com/saadnaeem-dev/pytorch-linear-warmup-cosine-a
 
 ### Hyperparameters used in the paper
 
-| Setting | Value |
-|---|---|
-| Batch size | 12 |
-| Epochs | 100 |
-| Input resolution | 192 × 640 |
-| Optimizer | AdamW |
-| Scheduler | Cosine Annealing Warm Restarts |
-| Initial LR (DepthNet) | 5e-4 → min 5e-6 |
-| Initial LR (PoseNet)  | 1e-4 → min 1e-5 |
-| First cycle length | 35 epochs |
-| ImageNet pretraining | Not used |
+| Setting               | Value                          |
+| --------------------- | ------------------------------ |
+| Batch size            | 12                             |
+| Epochs                | 100                            |
+| Input resolution      | 192 × 640                      |
+| Optimizer             | AdamW                          |
+| Scheduler             | Cosine Annealing Warm Restarts |
+| Initial LR (DepthNet) | 5e-4 → min 5e-6                |
+| Initial LR (PoseNet)  | 1e-4 → min 1e-5                |
+| First cycle length    | 35 epochs                      |
+| ImageNet pretraining  | Not used                       |
 
 ---
 
@@ -237,27 +237,39 @@ Outputs a colorized disparity visualization next to the input file.
 
 ## ⚡ Deploying to Jetson Orin Nano (TensorRT)
 
-The headline numbers above come from a TensorRT-optimized FP16 engine. The recommended export path is **PyTorch → ONNX → TensorRT**:
+The headline numbers above come from a TensorRT-optimized FP16 engine.
+We provide a single script that handles the full **PyTorch → ONNX → optimized ONNX → TensorRT engine** pipeline.
+
+### 1. Build the engine
+
+Run this _on the target Jetson device_ — TensorRT engines are device- and
+TensorRT-version-specific, so building on the desktop won't work for deployment.
 
 ```bash
-# 1) Export to ONNX (run on dev machine)
-python export_onnx.py \
-    --load_weights_folder /path/to/weights/folder \
-    --output litenext.onnx \
+python convert_to_trt.py \
+    --weights ./tmp/litenext_v1/models/weights_99 \
+    --output  ./trt_engine \
+    --model-name litenext_v1 \
     --height 192 --width 640
-
-# 2) On the Jetson — lock clocks first
-sudo jetson_clocks
-sudo nvpmodel -m 0   # 0 = MaxN, 1 = 15W, 2 = 25W, etc. — see your nvpmodel.conf
-
-# 3) Build the TensorRT engine
-trtexec --onnx=litenext.onnx \
-        --saveEngine=litenext_fp16.trt \
-        --fp16 \
-        --workspace=2048
 ```
 
-For the cleanest inference-time measurements, warm up with at least 20 forward passes before timing, and use `cudaEventRecord` (not Python wall-clock) for the actual measurements.
+This produces three files under `./trt_engine/`:
+
+| File                      | Purpose                                                        |
+| ------------------------- | -------------------------------------------------------------- |
+| `litenext_v1.onnx`        | Raw ONNX export from PyTorch                                   |
+| `litenext_v1_opt.onnx`    | Graph-optimized ONNX (BN/Conv fusion, INT64→INT32 cast)        |
+| `litenext_v1_fp16.engine` | Final serialized TensorRT engine — load this at inference time |
+
+### 2. Lock the Jetson clocks before benchmarking
+
+```bash
+sudo nvpmodel -m 0    # 0 = MaxN, 1 = 7W, 2 = 15W, 3 = 25W (see your nvpmodel.conf)
+sudo jetson_clocks    # pin CPU/GPU/EMC to max within the selected power mode
+```
+
+For clean inference-time numbers, warm up with at least 20 forward passes
+before timing, and use `cudaEventRecord` rather than Python wall-clock.
 
 ---
 
